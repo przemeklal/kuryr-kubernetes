@@ -33,6 +33,7 @@ ML2 drivers.
     basic
     nested-vlan
     nested-macvlan
+    nested-dpdk
     odl_support
     ovn_support
     dragonflow_support

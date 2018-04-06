@@ -15,13 +15,16 @@
 
 import os
 
+from kuryr.lib import config as kuryr_config
 from kuryr.lib import utils
-
 from kuryr_kubernetes import config
 from kuryr_kubernetes import k8s_client
 from neutronclient import client as n_client
+from novaclient import client as nova_client
+from oslo_config import cfg
 
 _clients = {}
+_NOVA_CLIENT = 'nova-client'
 _NEUTRON_CLIENT = 'neutron-client'
 _LB_CLIENT = 'load-balancer-client'
 _KUBERNETES_CLIENT = 'kubernetes-client'
@@ -39,9 +42,14 @@ def get_kubernetes_client():
     return _clients[_KUBERNETES_CLIENT]
 
 
+def get_nova_client():
+    return _clients[_NOVA_CLIENT]
+
+
 def setup_clients():
     setup_neutron_client()
     setup_loadbalancer_client()
+    setup_nova_client()
     setup_kubernetes_client()
 
 
@@ -79,3 +87,18 @@ def setup_kubernetes_client():
         port = os.environ['KUBERNETES_SERVICE_PORT_HTTPS']
         api_root = "https://%s:%s" % (host, port)
     _clients[_KUBERNETES_CLIENT] = k8s_client.K8sClient(api_root)
+
+
+def setup_nova_client():
+    _clients[_NOVA_CLIENT] = _get_nova_client()
+
+
+# TODO(garyloug): move it elsewhere, e.g. kuryr-lib
+def _get_nova_client():
+    conf_group = kuryr_config.neutron_group.name
+    auth_plugin = utils.get_auth_plugin(conf_group)
+    session = utils.get_keystone_session(conf_group, auth_plugin)
+    endpoint_type = getattr(getattr(cfg.CONF, conf_group), 'endpoint_type')
+
+    return nova_client.Client("2.1", session=session, auth=auth_plugin,
+                              endpoint_type=endpoint_type)

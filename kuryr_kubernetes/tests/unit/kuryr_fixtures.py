@@ -41,3 +41,11 @@ class MockLBaaSClient(fixtures.Fixture):
         self.useFixture(fixtures.MockPatch(
             'kuryr_kubernetes.clients.get_loadbalancer_client',
             lambda: self.client))
+
+
+class MockNovaClient(fixtures.Fixture):
+    def _setUp(self):
+        self.client = mock.Mock()
+        self.useFixture(fixtures.MockPatch(
+            'kuryr_kubernetes.clients.get_nova_client',
+            lambda: self.client))

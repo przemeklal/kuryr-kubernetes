@@ -98,7 +98,16 @@ def connect(vif, instance_info, ifname, netns=None, report_health=None,
         report_health(driver.is_healthy())
     os_vif.plug(vif, instance_info)
     driver.connect(vif, ifname, netns, container_id)
-    _configure_l3(vif, ifname, netns, is_default_gateway)
+
+    # check if vif is L3 or L2 only (e.g. DPDK)
+    try:
+        if hasattr(vif, 'l3_setup'):
+            if vif.obj_attr_is_set('l3_setup') and vif.l3_setup:
+                _configure_l3(vif, ifname, netns, is_default_gateway)
+        else:
+            _configure_l3(vif, ifname, netns, is_default_gateway)
+    except AttributeError:
+        raise
 
 
 def disconnect(vif, instance_info, ifname, netns=None, report_health=None,
